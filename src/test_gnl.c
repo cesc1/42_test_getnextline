@@ -87,3 +87,20 @@ void	test_lore_ipsum(void)
 
 	assert_file("test_files/lore_ipsum.txt", arr, 12);
 }
+
+void	test_empty(void)
+{
+	assert_file("test_files/empty.txt", NULL, 0);
+}
+
+void	test_perms(void)
+{
+	int		fd;
+	char	*line;
+
+	fd = open("test_files/lore_ipsum.txt", O_WRONLY);
+	TEST_ASSERT_TRUE_MESSAGE(fd != -1, "Error: Failed to read file.");
+	line = get_next_line(fd);
+	TEST_ASSERT_NULL(line);
+	close(fd);
+}

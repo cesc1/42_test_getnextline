@@ -18,6 +18,7 @@ UNITY_FILES := $(addprefix $(UNITY_DIR)/,$(UNITY_FILES))
 
 UNITY_URL_BASE := https://raw.githubusercontent.com/ThrowTheSwitch/Unity/refs/heads/master/src
 
+#CBUFFER_SIZE := -D BUFFER_SIZE=1
 CFLAGS := -I$(GNL_HEADER) -I$(TEST_DIR) -I$(UNITY_DIR) -Wall -Wextra -Werror
 CFLAGS_DEBUG = -g
 #CFLAGS_MEMORY = -fsanitize=address -fno-omit-frame-pointer
@@ -34,7 +35,7 @@ CLINKER := $(UNITY_DIR)/unity.c $(GNL_FILES)
 all: test
 
 test: $(UNITY_FILES) $(OBJ)
-	cc $(OBJ) $(CLINKER) $(CFLAGS_MEMORY) -o $(NAME)
+	cc $(OBJ) $(CLINKER) $(CFLAGS_DEBUG) $(CBUFFER_SIZE) $(CFLAGS_MEMORY) -o $(NAME)
 	./$(NAME)
 
 $(OBJ_DIR)/%.o: $(TEST_DIR)/%.c | $(OBJ_DIR)
@@ -48,6 +49,9 @@ clean:
 
 fclean: clean unity_clean
 	rm -f $(NAME)
+
+perms_add:
+	chmod a+rwx test_files/perms.txt
 
 # ###########
 # Unity setup
@@ -70,4 +74,4 @@ $(UNITY_DIR)/unity.h: | $(UNITY_DIR)
 $(UNITY_DIR)/unity_internals.h: | $(UNITY_DIR)
 	wget --quiet -O $@ $(UNITY_URL_BASE)/unity_internals.h
 
-.PHONY: all test clean unity_init unity_clean
+.PHONY: all test clean unity_init unity_clean perms_add
