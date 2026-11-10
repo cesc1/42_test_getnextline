@@ -1,6 +1,6 @@
 NAME := test.exe
-GNT_FILES := ../get_next_line.o get_next_line_utils.o
-GNT_HEADER := ../.
+GNL_FILES := ../get_next_line.c ../get_next_line_utils.c
+GNL_HEADER := ../.
 
 TEST_DIR := src
 OBJ_DIR := obj
@@ -18,10 +18,10 @@ UNITY_FILES := $(addprefix $(UNITY_DIR)/,$(UNITY_FILES))
 
 UNITY_URL_BASE := https://raw.githubusercontent.com/ThrowTheSwitch/Unity/refs/heads/master/src
 
-CFLAGS := -I$(GNT_HEADER) -I$(TEST_DIR) -I$(UNITY_DIR) -Wall -Wextra -Werror
+CFLAGS := -I$(GNL_HEADER) -I$(TEST_DIR) -I$(UNITY_DIR) -Wall -Wextra -Werror
 CFLAGS_DEBUG = -g
 #CFLAGS_MEMORY = -fsanitize=address -fno-omit-frame-pointer
-CLINKER := $(UNITY_DIR)/unity.c $(GNT_FILES) -lbsd
+CLINKER := $(UNITY_DIR)/unity.c $(GNL_FILES)
 
 # ------------------------------------------------------------------------
 # Methods ----------------------------------------------------------------
@@ -33,12 +33,9 @@ CLINKER := $(UNITY_DIR)/unity.c $(GNT_FILES) -lbsd
 
 all: test
 
-test: $(UNITY_FILES) $(GNT_FILES) $(OBJ)
+test: $(UNITY_FILES) $(OBJ)
 	cc $(OBJ) $(CLINKER) $(CFLAGS_MEMORY) -o $(NAME)
 	./$(NAME)
-
-$(GNT_FILES):
-	@$(MAKE) --no-print-directory -C ../.
 
 $(OBJ_DIR)/%.o: $(TEST_DIR)/%.c | $(OBJ_DIR)
 	cc $(CFLAGS) $(CFLAGS_DEBUG) $(CFLAGS_MEMORY) -c -o $@ $<
@@ -73,4 +70,4 @@ $(UNITY_DIR)/unity.h: | $(UNITY_DIR)
 $(UNITY_DIR)/unity_internals.h: | $(UNITY_DIR)
 	wget --quiet -O $@ $(UNITY_URL_BASE)/unity_internals.h
 
-.PHONY: all test $(GNT_FILES) clean unity_init unity_clean
+.PHONY: all test clean unity_init unity_clean
