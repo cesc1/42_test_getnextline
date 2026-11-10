@@ -1,4 +1,3 @@
-NAME := test.exe
 GNL_FILES := ../get_next_line.c ../get_next_line_utils.c
 GNL_HEADER := ../.
 
@@ -21,7 +20,6 @@ UNITY_URL_BASE := https://raw.githubusercontent.com/ThrowTheSwitch/Unity/refs/he
 #CBUFFER_SIZE := -D BUFFER_SIZE=1
 CFLAGS := -I$(GNL_HEADER) -I$(TEST_DIR) -I$(UNITY_DIR) -Wall -Wextra -Werror
 CFLAGS_DEBUG = -g
-#CFLAGS_MEMORY = -fsanitize=address -fno-omit-frame-pointer
 CLINKER := $(UNITY_DIR)/unity.c $(GNL_FILES)
 
 # ------------------------------------------------------------------------
@@ -32,11 +30,46 @@ CLINKER := $(UNITY_DIR)/unity.c $(GNL_FILES)
 # Tester compilation
 ####################
 
-all: test
+test: test0.exe
+	./test0.exe
 
-test: $(UNITY_FILES) $(OBJ)
-	cc $(OBJ) $(CLINKER) $(CFLAGS_DEBUG) $(CBUFFER_SIZE) $(CFLAGS_MEMORY) -o $(NAME)
-	./$(NAME)
+test_all: test0.exe test1.exe test5.exe test10.exe test50.exe test1000.exe
+	@echo "Normal test |"
+	@echo =============
+	./test0.exe
+	@echo "BUFFER_SIZE = 1 |"
+	@echo =================
+	./test1.exe
+	@echo "BUFFER_SIZE = 5 |"
+	@echo =================
+	./test5.exe
+	@echo "BUFFER_SIZE = 10 |"
+	@echo ==================
+	./test10.exe
+	@echo "BUFFER_SIZE = 50 |"
+	@echo ==================
+	./test50.exe
+	@echo "BUFFER_SIZE = 1000 |"
+	@echo ====================
+	./test1000.exe
+
+test0.exe: $(UNITY_FILES) $(OBJ)
+	cc $(OBJ) $(CLINKER) $(CFLAGS_DEBUG) -o $@
+
+test1.exe: $(UNITY_FILES) $(OBJ)
+	cc $(OBJ) $(CLINKER) $(CFLAGS_DEBUG) -o $@ -D BUFFER_SIZE=1
+
+test5.exe: $(UNITY_FILES) $(OBJ)
+	cc $(OBJ) $(CLINKER) $(CFLAGS_DEBUG) -o $@ -D BUFFER_SIZE=5
+
+test10.exe: $(UNITY_FILES) $(OBJ)
+	cc $(OBJ) $(CLINKER) $(CFLAGS_DEBUG) -o $@ -D BUFFER_SIZE=10
+
+test50.exe: $(UNITY_FILES) $(OBJ)
+	cc $(OBJ) $(CLINKER) $(CFLAGS_DEBUG) -o $@ -D BUFFER_SIZE=50
+
+test1000.exe: $(UNITY_FILES) $(OBJ)
+	cc $(OBJ) $(CLINKER) $(CFLAGS_DEBUG) -o $@ -D BUFFER_SIZE=1000
 
 $(OBJ_DIR)/%.o: $(TEST_DIR)/%.c | $(OBJ_DIR)
 	cc $(CFLAGS) $(CFLAGS_DEBUG) $(CFLAGS_MEMORY) -c -o $@ $<
@@ -48,10 +81,7 @@ clean:
 	rm -rf obj
 
 fclean: clean unity_clean
-	rm -f $(NAME)
-
-perms_add:
-	chmod a+rwx test_files/perms.txt
+	rm -f test0.exe test1.exe test5.exe test10.exe test50.exe test1000.exe
 
 # ###########
 # Unity setup
@@ -74,4 +104,4 @@ $(UNITY_DIR)/unity.h: | $(UNITY_DIR)
 $(UNITY_DIR)/unity_internals.h: | $(UNITY_DIR)
 	wget --quiet -O $@ $(UNITY_URL_BASE)/unity_internals.h
 
-.PHONY: all test clean unity_init unity_clean perms_add
+.PHONY: test test_all test clean unity_init unity_clean
