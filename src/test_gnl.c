@@ -104,3 +104,53 @@ void	test_perms(void)
 	TEST_ASSERT_NULL(line);
 	close(fd);
 }
+
+void	test_bonus(void)
+{
+	int		fd1;
+	int		fd2;
+	int		i1;
+	int		i2;
+	char	*line;
+	char	*arr1[] = {
+		"fd0 line0__\n",
+		"fd0 line1__\n",
+		"fd0 line2__\n",
+		"fd0 line3__\n"
+	};
+	char	*arr2[] = {
+		"fd1 line0 .-\n",
+		"fd1 line1 .-.-\n",
+		"fd1 line2 .-.-.-\n",
+		"fd1 line3 .-.-.-.-\n"
+	};
+
+	fd1 = open("test_files/bonus1.txt", O_RDONLY);
+	fd2 = open("test_files/bonus2.txt", O_RDONLY);
+	TEST_ASSERT_TRUE_MESSAGE(fd1 != -1, "Error: Failed to read file.");
+	TEST_ASSERT_TRUE_MESSAGE(fd2 != -1, "Error: Failed to read file.");
+	i1 = 0;
+	i2 = 0;
+	while (1)
+	{
+		line = get_next_line(fd1);
+		if (!line)
+			break ;
+		TEST_ASSERT_EQUAL_STRING(arr1[i1], line);
+		free(line);
+		i1++;
+		line = get_next_line(fd2);
+		if (!line)
+			break ;
+		TEST_ASSERT_EQUAL_STRING(arr2[i2], line);
+		free(line);
+		i2++;
+	}
+	line = get_next_line(fd1);
+	TEST_ASSERT_NULL(line);
+	line = get_next_line(fd2);
+	TEST_ASSERT_NULL(line);
+	TEST_ASSERT_EQUAL_INT(8, i1 + i2);
+	close(fd1);
+	close(fd2);
+}

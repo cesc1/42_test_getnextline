@@ -1,87 +1,91 @@
-GNL_FILES := ../get_next_line.c ../get_next_line_utils.c
-GNL_HEADER := ../.
+# --------------------------------------------------------------------------
+# Variables ----------------------------------------------------------------
+# --------------------------------------------------------------------------
+
+# CONFIG
+
+CC = cc
 
 TEST_DIR := src
-OBJ_DIR := obj
-
-TEST_FILES := $(notdir $(wildcard $(TEST_DIR)/*.c))
-OBJ := $(addprefix $(OBJ_DIR)/, $(TEST_FILES:.c=.o))
-TEST_FILES := $(addprefix $(TEST_DIR)/,$(TEST_FILES))
-
-
+BUILD_ROOT := build
 UNITY_DIR := unity
-UNITY_FILES := unity.c \
-			   unity.h \
-			   unity_internals.h
-UNITY_FILES := $(addprefix $(UNITY_DIR)/,$(UNITY_FILES))
+
+GNL_FILES = ../get_next_line.c ../get_next_line_utils.c
+CPP_FILES = $(UNITY_DIR)/unity.c $(GNL_FILES)
+GNL_HEADER := ../.
 
 UNITY_URL_BASE := https://raw.githubusercontent.com/ThrowTheSwitch/Unity/refs/heads/master/src
 
-#CBUFFER_SIZE := -D BUFFER_SIZE=1
-CFLAGS := -I$(GNL_HEADER) -I$(TEST_DIR) -I$(UNITY_DIR) -Wall -Wextra -Werror
-CFLAGS_DEBUG = -g
-CLINKER := $(UNITY_DIR)/unity.c $(GNL_FILES)
+BUFFER_SIZES := 1 5 10 50 1000
+
+# CC FLAGS
+
+CFLAGS += -Wall -Wextra -Werror -I$(GNL_HEADER) -I$(TEST_DIR) -I$(UNITY_DIR)
+DEBUG_FLAGS := -g
+
+# BUILD
+
+ifdef BONUS
+	BUILD_DIR := $(BUILD_ROOT)/bonus
+	GNL_FILES := $(patsubst %.c,%_bonus.c,$(GNL_FILES))
+	CFLAGS += -D TEST_BONUS
+else
+	BUILD_DIR := $(BUILD_ROOT)/normal
+endif
+
+# FILES
+
+TEST_FILES := $(wildcard $(TEST_DIR)/*.c)
+
+OBJ := $(patsubst $(TEST_DIR)/%.c,$(BUILD_DIR)/%.o,$(TEST_FILES))
+
+UNITY_FILES := $(addprefix $(UNITY_DIR)/, unity.c unity.h unity_internals.h)
+
+TEST_BINS := $(addprefix $(BUILD_DIR)/test, \
+	$(addsuffix .exe, 0 $(BUFFER_SIZES)))
+
 
 # ------------------------------------------------------------------------
 # Methods ----------------------------------------------------------------
 # ------------------------------------------------------------------------
 
-####################
-# Tester compilation
-####################
+.PHONY: all test test_all test_bonus clean fclean unity_init unity_clean
 
-test: test0.exe
-	./test0.exe
+# Test
 
-test_all: test0.exe test1.exe test5.exe test10.exe test50.exe test1000.exe
-	@echo "Normal test |"
-	@echo =============
-	./test0.exe
-	@echo "BUFFER_SIZE = 1 |"
-	@echo =================
-	./test1.exe
-	@echo "BUFFER_SIZE = 5 |"
-	@echo =================
-	./test5.exe
-	@echo "BUFFER_SIZE = 10 |"
-	@echo ==================
-	./test10.exe
-	@echo "BUFFER_SIZE = 50 |"
-	@echo ==================
-	./test50.exe
-	@echo "BUFFER_SIZE = 1000 |"
-	@echo ====================
-	./test1000.exe
+test: $(BUILD_DIR)/test0.exe
+	./$<
 
-test0.exe: $(UNITY_FILES) $(OBJ)
-	cc $(OBJ) $(CLINKER) $(CFLAGS_DEBUG) -o $@
+test_all: $(TEST_BINS)
+	@for size in 0 $(BUFFER_SIZES); do \
+		echo "==================="; \
+		if [ $$size -eq 0 ]; then \
+			echo "Default BUFFER_SIZE |"; \
+		else \
+			echo "BUFFER_SIZE = $$size |"; \
+		fi; \
+		echo "==================="; \
+		./$(BUILD_DIR)/test$$size.exe || exit $$?; \
+	done
 
-test1.exe: $(UNITY_FILES) $(OBJ)
-	cc $(OBJ) $(CLINKER) $(CFLAGS_DEBUG) -o $@ -D BUFFER_SIZE=1
+test_bonus:
+	$(MAKE) BONUS=1 test_all
 
-test5.exe: $(UNITY_FILES) $(OBJ)
-	cc $(OBJ) $(CLINKER) $(CFLAGS_DEBUG) -o $@ -D BUFFER_SIZE=5
+# Compilation
 
-test10.exe: $(UNITY_FILES) $(OBJ)
-	cc $(OBJ) $(CLINKER) $(CFLAGS_DEBUG) -o $@ -D BUFFER_SIZE=10
+$(BUILD_DIR)/%.o: $(TEST_DIR)/%.c Makefile
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) $(DEBUG_FLAGS) -c $< -o $@
 
-test50.exe: $(UNITY_FILES) $(OBJ)
-	cc $(OBJ) $(CLINKER) $(CFLAGS_DEBUG) -o $@ -D BUFFER_SIZE=50
-
-test1000.exe: $(UNITY_FILES) $(OBJ)
-	cc $(OBJ) $(CLINKER) $(CFLAGS_DEBUG) -o $@ -D BUFFER_SIZE=1000
-
-$(OBJ_DIR)/%.o: $(TEST_DIR)/%.c | $(OBJ_DIR)
-	cc $(CFLAGS) $(CFLAGS_DEBUG) $(CFLAGS_MEMORY) -c -o $@ $<
-
-$(OBJ_DIR):
-	mkdir -p $@
+$(BUILD_DIR)/test%.exe: $(OBJ) $(UNITY_FILES) Makefile
+	@mkdir -p $(@D)
+	$(CC) $(OBJ) $(CPP_FILES) $(CFLAGS) $(DEBUG_FLAGS) -o $@ \
+	$(if $(filter 0,$*),,-D BUFFER_SIZE=$*)
 
 clean:
-	rm -rf obj
+	rm -rf $(BUILD_ROOT)
 
 fclean: clean unity_clean
-	rm -f test0.exe test1.exe test5.exe test10.exe test50.exe test1000.exe
 
 # ###########
 # Unity setup
@@ -98,10 +102,5 @@ $(UNITY_DIR):
 $(UNITY_DIR)/unity.c: | $(UNITY_DIR)
 	wget --quiet -O $@ $(UNITY_URL_BASE)/unity.c
 
-$(UNITY_DIR)/unity.h: | $(UNITY_DIR)
-	wget --quiet -O $@ $(UNITY_URL_BASE)/unity.h
-
-$(UNITY_DIR)/unity_internals.h: | $(UNITY_DIR)
-	wget --quiet -O $@ $(UNITY_URL_BASE)/unity_internals.h
-
-.PHONY: test test_all test clean unity_init unity_clean
+$(UNITY_DIR)/%.h: | $(UNITY_DIR)
+	wget --quiet -O $@ $(UNITY_URL_BASE)/$(@F)
